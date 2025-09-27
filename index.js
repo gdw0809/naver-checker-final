@@ -4,7 +4,7 @@ import axios from "axios";
 
 // 환경 변수에서 날짜를 읽어오도록 설정
 const CHECK_DATE = process.env.CHECK_DATE || "2025-09-28";
-const TARGET_URL = `https://m.booking.naver.com/booking/12/bizes/843881/items/6627331?area=pll&entry=pll&isProgramBizItem=false&lang=ko&startDateTime=${CHECK_DATE}T00%3A00%A00%2B09%3A00&theme=place`;
+const TARGET_URL = `https://m.booking.naver.com/booking/12/bizes/843881/items/6627331?area=pll&entry=pll&isProgramBizItem=false&lang=ko&startDateTime=${CHECK_DATE}T00%3A00%3A00%2B09%3A00&theme=place`;
 const NTFY_TOPIC = "my-naver-alert-a1b2c3d4";
 const CHECK_INTERVAL = "* * * * *";
 
@@ -17,18 +17,22 @@ async function checkReservation() {
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
-    await page.goto(TARGET_URL, { waitUntil: "networkidle2" });
+    await page.goto(TARGET_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
 
-    // =================================================================
-    //                    [수정된 핵심 부분]
-    // 'unselectable' 클래스가 없는 버튼을 활성화된 버튼으로 간주합니다.
-    // =================================================================
     const isAvailable = await page.evaluate(() => {
-      // 1. 'btn_time' 클래스를 가진 모든 시간 버튼을 가져옵니다.
+      // 'btn_time' 클래스를 가진 모든 시간 버튼을 가져옵니다.
       const timeButtons = Array.from(document.querySelectorAll('button.btn_time'));
 
-      // 2. 이 중에서 'unselectable' 클래스가 없는 버튼이 있는지 찾습니다.
-      return timeButtons.some(btn => !btn.classList.contains('unselectable'));
+      // 아래 두 가지 조건을 '모두' 만족하는 버튼이 있는지 찾습니다.
+      return timeButtons.some(btn => {
+        // 조건 1: 버튼 텍스트에 '오전' 또는 '오후'가 포함되어 있는가?
+        const hasTimeText = btn.textContent.includes('오전') || btn.textContent.includes('오후');
+        
+        // 조건 2: 버튼 클래스에 'unselectable'이 포함되어 있지 않은가?
+        const isSelectable = !btn.classList.contains('unselectable');
+        
+        return hasTimeText && isSelectable; // 두 조건이 모두 참이어야 함
+      });
     });
 
     if (isAvailable) {
