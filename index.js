@@ -3,7 +3,7 @@ import cron from "node-cron";
 import axios from "axios";
 
 // 환경 변수에서 날짜를 읽어오도록 설정
-const CHECK_DATE = process.env.CHECK_DATE || "2025-10-31";
+const CHECK_DATE = process.env.CHECK_DATE || "2025-09-28";
 const TARGET_URL = `https://m.booking.naver.com/booking/12/bizes/843881/items/6627331?area=pll&entry=pll&isProgramBizItem=false&lang=ko&startDateTime=${CHECK_DATE}T00%3A00%A00%2B09%3A00&theme=place`;
 const NTFY_TOPIC = "my-naver-alert-a1b2c3d4";
 const CHECK_INTERVAL = "* * * * *";
