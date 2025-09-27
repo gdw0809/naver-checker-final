@@ -2,8 +2,9 @@ import puppeteer from "puppeteer";
 import cron from "node-cron";
 import axios from "axios";
 
+// 환경 변수에서 날짜를 읽어오도록 설정
 const CHECK_DATE = process.env.CHECK_DATE || "2025-10-31";
-const TARGET_URL = `https://m.booking.naver.com/booking/12/bizes/843881/items/6627331?area=pll&entry=pll&isProgramBizItem=false&lang=ko&startDateTime=${CHECK_DATE}T00%3A00%3A00%2B09%3A00&theme=place`;
+const TARGET_URL = `https://m.booking.naver.com/booking/12/bizes/843881/items/6627331?area=pll&entry=pll&isProgramBizItem=false&lang=ko&startDateTime=${CHECK_DATE}T00%3A00%A00%2B09%3A00&theme=place`;
 const NTFY_TOPIC = "my-naver-alert-a1b2c3d4";
 const CHECK_INTERVAL = "* * * * *";
 
@@ -17,14 +18,19 @@ async function checkReservation() {
     });
     const page = await browser.newPage();
     await page.goto(TARGET_URL, { waitUntil: "networkidle2" });
+
+    // =================================================================
+    //                    [수정된 핵심 부분]
+    // 'unselectable' 클래스가 없는 버튼을 활성화된 버튼으로 간주합니다.
+    // =================================================================
     const isAvailable = await page.evaluate(() => {
-      const allButtons = Array.from(document.querySelectorAll('button'));
-      return allButtons.some(btn => {
-        const hasTimeText = btn.textContent.includes('오전') || btn.textContent.includes('오후');
-        const isEnabled = btn.getAttribute('aria-disabled') === 'false';
-        return hasTimeText && isEnabled;
-      });
+      // 1. 'btn_time' 클래스를 가진 모든 시간 버튼을 가져옵니다.
+      const timeButtons = Array.from(document.querySelectorAll('button.btn_time'));
+
+      // 2. 이 중에서 'unselectable' 클래스가 없는 버튼이 있는지 찾습니다.
+      return timeButtons.some(btn => !btn.classList.contains('unselectable'));
     });
+
     if (isAvailable) {
       console.log("🎉 빈자리 발견! 푸시 알림을 보냅니다.");
       await sendNotification(`🚨 [${CHECK_DATE}] 네이버 예약에 빈자리가 생겼습니다!`);
