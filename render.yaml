@@ -1,7 +1,6 @@
 services:
   - type: web
-    # GitHub 이름과 동일하게 설정하는 것을 추천합니다.
-    name: myreservation-for-naver
+    name: naver-checker-final # 새 이름으로 변경
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
